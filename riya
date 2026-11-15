@@ -1,0 +1,139 @@
+stack<int> completedStack;
+tasks[index].status = "Completed";
+
+tasks[index].progress = 100;
+
+completedStack.push(id);
+
+void undoCompletion()
+{
+    if (completedStack.empty())
+    {
+        cout << "No completed task available to undo.\n";
+        return;
+    }
+
+    int id = completedStack.top();
+
+    completedStack.pop();
+
+    int index = findTaskIndex(id);
+
+    if (index == -1)
+    {
+        cout << "Task no longer exists.\n";
+        return;
+    }
+
+    tasks[index].status = "Pending";
+
+    tasks[index].progress = 0;
+
+    rebuildPendingQueue();
+
+    saveTasks();
+
+    cout << "Last completion undone for task ID "
+         << id << ".\n";
+}
+
+void saveSubjects()
+{
+    ofstream file("subjects.txt");
+
+    for (const Subject &s : subjects)
+    {
+        file << quoted(s.name) << ' '
+             << quoted(s.code) << ' '
+             << quoted(s.teacher) << ' '
+             << s.totalTopics << '\n';
+    }
+}
+
+void saveTasks()
+{
+    ofstream file("tasks.txt");
+
+    for (const Task &t : tasks)
+    {
+        file << t.id << ' '
+             << quoted(t.subject) << ' '
+             << quoted(t.topic) << ' '
+             << quoted(t.date) << ' '
+             << quoted(t.priority) << ' '
+             << t.estimatedMinutes << ' '
+             << quoted(t.status) << ' '
+             << t.progress << '\n';
+    }
+}
+
+void saveExams()
+{
+    ofstream file("exams.txt");
+
+    for (const Exam &e : exams)
+    {
+        file << quoted(e.subject) << ' '
+             << quoted(e.date) << '\n';
+    }
+}
+
+void loadData()
+{
+    ifstream sf("subjects.txt");
+
+    Subject s;
+
+    while (sf >> quoted(s.name)
+              >> quoted(s.code)
+              >> quoted(s.teacher)
+              >> s.totalTopics)
+    {
+        subjects.push_back(s);
+    }
+
+    ifstream ef("exams.txt");
+
+    Exam e;
+
+    while (ef >> quoted(e.subject) >> quoted(e.date))
+    {
+        exams.push_back(e);
+    }
+}
+
+ifstream tf("tasks.txt");
+
+string line;
+
+while (getline(tf, line))
+{
+    if (line.empty())
+        continue;
+
+    istringstream row(line);
+
+    Task t;
+
+    if (!(row >> t.id
+              >> quoted(t.subject)
+              >> quoted(t.topic)
+              >> quoted(t.date)
+              >> quoted(t.priority)
+              >> t.estimatedMinutes
+              >> quoted(t.status)))
+        continue;
+
+    if (!(row >> t.progress))
+        t.progress = (t.status == "Completed" ? 100 : 0);
+
+    t.progress = max(0, min(100, t.progress));
+
+    if (t.progress == 100)
+        t.status = "Completed";
+
+    else if (t.status == "Completed")
+        t.status = "Pending";
+
+    tasks.push_back(t);
+}
