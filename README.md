@@ -227,7 +227,7 @@ A C++ compiler such as G++ or MinGW.
 Visual Studio Code or another C++ IDE.
 Git installed (for cloning the repository).
 Step 1: Clone the Repository
-https://github.com/bishtriya19082007-gehu/Study-Planner/new/main?filename=README.md
+(https://github.com/bishtriya19082007-gehu/Study-Planner/tree/main)
 Step 2: Open the Project Folder
 cd Smart-Study-Planner
 Step 3: Compile the Program
