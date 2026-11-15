@@ -1,0 +1,252 @@
+int findTaskIndex(int id)
+{
+    for (int i = 0; i < (int)tasks.size(); i++)
+    {
+        if (tasks[i].id== id)
+            return i;
+    }
+
+    return -1;
+}
+void searchTasks()
+{
+    string query;
+
+    cout << "Search by subject, topic, priority or status: ";
+    getline(cin, query);
+
+    query = toLowerCase(query);
+
+    bool found = false;
+
+    for (const Task &t : tasks)
+    {
+        if (toLowerCase(t.subject).find(query) != string::npos ||
+            toLowerCase(t.topic).find(query) != string::npos ||
+            toLowerCase(t.priority).find(query) != string::npos ||
+            toLowerCase(t.status).find(query) != string::npos)
+        {
+            if (!found)
+            {
+                cout << "\nSearch Results:\n";
+                found = true;
+            }
+
+            t.display();
+        }
+    }
+
+    if (!found)
+        cout << "No matching tasks found.\n";
+}void sortTasks()
+{
+    int choice;
+
+    cout << "\n1. Sort by Date"
+         << "\n2. Sort by Priority"
+         << "\n3. Sort by Urgency"
+         << "\nEnter choice: ";
+
+    if (!(cin >> choice))
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input.\n";
+        return;
+    }
+
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    if (choice == 1)
+    {
+        sort(tasks.begin(), tasks.end(),
+             [](const Task &a, const Task &b)
+             {
+                 long long da = dateKey(a.date);
+                 long long db = dateKey(b.date);
+
+                 if (da == db)
+                     return a.id < b.id;
+
+                 return da < db;
+             });
+
+        cout << "Tasks sorted by date.\n";
+    }
+
+    else if (choice == 2)
+    {
+        sort(tasks.begin(), tasks.end(),
+             [this](const Task &a, const Task &b)
+             {
+                 int pa = priorityRank(a.priority);
+                 int pb = priorityRank(b.priority);
+
+                 if (pa == pb)
+                     return dateKey(a.date) < dateKey(b.date);
+
+                 return pa > pb;
+             });
+
+        cout << "Tasks sorted by priority.\n";
+    }
+
+    else if (choice == 3)
+    {
+        sort(tasks.begin(), tasks.end(),
+             [this](const Task &a, const Task &b)
+             {
+                 long long da = daysBetween(todayDate(), a.date);
+                 long long db = daysBetween(todayDate(), b.date);
+
+                 if (a.status == "Completed" &&
+                     b.status != "Completed")
+                     return false;
+
+                 if (a.status != "Completed" &&
+                     b.status == "Completed")
+                     return true;
+
+                 if (da != db)
+                     return da < db;
+
+                 int pa = priorityRank(a.priority);
+                 int pb = priorityRank(b.priority);
+
+                 if (pa != pb)
+                     return pa > pb;
+
+                 return a.progress < b.progress;
+             });
+
+        cout << "Tasks sorted by urgency.\n";
+    }
+
+    else
+    {
+        cout << "Invalid choice.\n";
+        return;
+    }
+
+    saveTasks();
+
+    viewTasks();
+}string toLowerCase(string s)
+{
+    transform(s.begin(), s.end(), s.begin(),
+              [](unsigned char c)
+              {
+                  return
+ static_cast<char>(tolower(c));
+              });
+
+    return s;
+}long long dateKey(const string &date)
+{
+    int day, month, year;
+    char slash1, slash2;
+
+    stringstream ss(date);
+
+    if (!(ss >> day >> slash1 >> month >> slash2 >> year))
+        return -1;
+
+    if (slash1 != '/' || slash2 != '/' ||
+        year < 1 || month < 1 || month > 12)
+        return -1;
+
+    int daysInMonth[] =
+    {
+        31,28,31,30,31,30,31,31,30,31,30,31
+    };
+
+    bool leap = (year % 400 == 0) ||
+                (year % 4 == 0 && year % 100 != 0);
+
+    if (leap)
+        daysInMonth[1] = 29;
+
+    if (day < 1 || day > daysInMonth[month - 1])
+        return -1;
+
+    return (long long)year * 10000 + month * 100 + day;
+}string todayDate()
+{
+    time_t now = time(nullptr);
+
+    tm *local = localtime(&now);
+
+    if (local == nullptr)
+        return "";
+
+    char buffer[11];
+
+    strftime(buffer, sizeof(buffer), "%d/%m/%Y", local);
+
+    return 
+string(buffer);
+}long long daysBetween(const string &from, const string &to)
+{
+    long long a = dateKey(from);
+    long long b = dateKey(to);
+
+    if (a == -1 || b == -1)
+        return -1;
+
+    int d1 = a % 100;
+    int m1 = (a / 100) % 100;
+    int y1 = a / 10000;
+
+    int d2 = b % 100;
+    int m2 = (b / 100) % 100;
+    int y2 = b / 10000;
+
+    tm t1 = {}, t2 = {};
+
+    t1.tm_mday = d1;
+    t1.tm_mon = m1 - 1;
+    t1.tm_year = y1 - 1900;
+    t1.tm_hour = 12;
+
+    t2.tm_mday = d2;
+    t2.tm_mon = m2 - 1;
+    t2.tm_year = y2 - 1900;
+    t2.tm_hour = 12;
+
+    time_t time1 = mktime(&t1);
+    time_t time2 = mktime(&t2);
+
+    if (time1 == (time_t)-1 || time2 == (time_t)-1)
+        return -1;
+
+    return (long long)difftime(time2, time1) / 86400;
+}do
+{
+    cout << "Enter date (DD/MM/YYYY): ";
+    getline(cin, date);
+
+    if (dateKey(date) == -1)
+        cout << "Invalid date. Try again.\n";
+
+}
+while (dateKey(date) == -1);do
+{
+    cout << "Enter priority (High/Medium/Low): ";
+
+    getline(cin, priority);
+
+    priority = toLowerCase(priority);
+
+    if (priority != "high" &&
+        priority != "medium" &&
+        priority != "low")
+    {
+        cout << "Enter High, Medium or Low.\n";
+    }
+
+}
+while (priority != "high" &&
+       priority != "medium" &&
+       priority != "low");
+
+priority[0] = toupper(static_cast<unsigned char>(priority[0]));
