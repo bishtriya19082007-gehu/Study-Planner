@@ -1,0 +1,455 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudySpace - Study Planner</title>
+<style>
+:root{--p:#7864c7;--light:#eee9ff;--bg:#f7f5fc;--text:#302a42;--muted:#89839a;--border:#ece8f3;--green:#36a783;--red:#dc6878;--orange:#e3a04d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+.app{display:flex;min-height:100vh}
+.sidebar{width:225px;position:fixed;inset:0 auto 0 0;background:white;padding:25px 15px;border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:3}
+.brand{font-size:21px;font-weight:bold;color:var(--p);margin:8px 10px 35px}
+.nav-label{font-size:10px;color:var(--muted);letter-spacing:2px;margin:10px}
+.nav button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:13px;border-radius:10px;margin-bottom:5px;cursor:pointer;color:#777087}
+.nav button.active,.nav button:hover{background:var(--light);color:var(--p);font-weight:bold}
+.note{margin-top:auto;background:var(--light);padding:15px;border-radius:12px;font-size:12px;line-height:1.6;color:#67588f}
+main{margin-left:225px;width:calc(100% - 225px);padding:28px;max-width:1500px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+header p{font-size:11px;color:var(--muted);margin:0 0 7px}
+header h1{font-size:25px;margin:0}
+.page{display:none}.page.active{display:block}
+.hero{background:linear-gradient(120deg,#7560c4,#a28fe9);color:white;padding:25px;border-radius:17px;margin-bottom:18px}
+.hero h2{margin:0 0 8px}.hero p{margin:0;font-size:13px;color:#eee9ff}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px}
+.stat,.panel{background:white;padding:18px;border:1px solid var(--border);border-radius:14px;margin-bottom:15px}
+.stat span{font-size:12px;color:var(--muted)}.stat h2{font-size:27px;margin:10px 0 4px}
+.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:15px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}
+.panel h3{font-size:15px;margin:0}
+.btn{background:var(--p);color:white;border:0;border-radius:8px;padding:10px 13px;font-size:12px;font-weight:bold;cursor:pointer}
+.btn.secondary{background:var(--light);color:var(--p)}
+.btn.danger{background:#fff0f1;color:var(--red)}
+.btn.green{background:#e8f7f0;color:var(--green)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}
+input,select{padding:10px;border:1px solid var(--border);border-radius:8px;background:white;color:var(--text);font-size:12px;min-width:0}
+.toolbar input{flex:1;min-width:140px}
+.task-list{display:grid;gap:9px}
+.task{display:flex;align-items:center;gap:9px;padding:12px;border:1px solid var(--border);border-radius:10px;background:white}
+.task-main{flex:1;min-width:0}.task-main strong{font-size:12px;display:block;overflow-wrap:anywhere}
+.task-main small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
+.task.done strong{text-decoration:line-through;color:#aaa}
+.check{accent-color:var(--green);width:18px;height:18px}
+.priority{font-size:10px;padding:5px 8px;border-radius:15px;font-weight:bold}
+.High{background:#fff0f1;color:#cf596a}.Medium{background:#fff5e6;color:#b98030}.Low{background:#eaf7f0;color:#329775}
+.track{height:8px;background:#f0edf5;border-radius:20px;overflow:hidden;margin-top:9px}
+.fill{height:100%;background:linear-gradient(90deg,#806bd0,#b3a3ef);border-radius:20px}
+.subject-card{border:1px solid var(--border);padding:14px;border-radius:11px;margin-bottom:10px}
+.subject-card strong{font-size:13px}.subject-card small{display:block;color:var(--muted);margin-top:5px}
+.exam{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.exam-date{background:var(--light);color:var(--p);padding:10px;border-radius:8px;font-size:11px;font-weight:bold}
+.exam-info{flex:1}.exam-info strong{font-size:12px}.exam-info small{display:block;color:var(--muted);margin-top:4px}
+.empty{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+.modal-bg{display:none;position:fixed;inset:0;background:#211b35a8;z-index:10;align-items:center;justify-content:center;padding:15px}
+.modal-bg.show{display:flex}.modal{background:white;border-radius:16px;padding:22px;width:min(450px,100%);max-height:90vh;overflow:auto}
+.modal h3{margin:0 0 16px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.form-grid label{display:grid;gap:6px;font-size:11px;color:var(--muted)}
+.form-grid input,.form-grid select{width:100%}.wide{grid-column:1/-1}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:17px}
+.toast{position:fixed;bottom:20px;right:20px;background:#302a42;color:white;padding:12px 17px;border-radius:9px;display:none;z-index:20;font-size:12px}
+.toast.show{display:block}
+@media(max-width:850px){.sidebar{width:70px;padding:15px 6px}.brand{font-size:0;text-align:center}.brand:after{content:"✦";font-size:24px}.nav-label,.note{display:none}.nav button{font-size:0;text-align:center;padding:14px 3px}.nav button::first-letter{font-size:18px}main{margin-left:70px;width:calc(100% - 70px);padding:18px}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.sidebar{inset:auto 0 0;width:100%;height:auto;flex-direction:row;padding:5px;border-top:1px solid var(--border)}.brand,.note{display:none}.nav{display:flex;width:100%;justify-content:space-around}.nav button{font-size:0;margin:0;padding:12px}.nav button::first-letter{font-size:17px}main{margin:0;width:100%;padding:17px 12px 85px}.grid{grid-template-columns:1fr}header h1{font-size:20px}.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.task{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+ <div class="brand">✦ StudySpace</div>
+ <div class="nav-label">WORKSPACE</div>
+ <nav class="nav">
+  <button class="active" data-page="dashboard">▦ Dashboard</button>
+  <button data-page="tasks">☷ Tasks</button>
+  <button data-page="today">◷ Today's Tasks</button>
+  <button data-page="subjects">▤ Subjects</button>
+  <button data-page="exams">▣ Exams</button>
+  <button data-page="dsa">⌘ DSA Tools</button>
+ </nav>
+ <div class="note"><b>Small steps every day ✨</b><br>Consistency is the key to achieving your study goals.</div>
+</aside>
+
+<main>
+<header>
+ <div><p id="dateLabel">YOUR PERSONAL STUDY SPACE</p><h1 id="pageTitle">Welcome to StudySpace!</h1></div>
+ <strong>📚</strong>
+</header>
+
+<section class="page active" id="dashboard">
+ <div class="hero"><h2>Make today count 🌱</h2><p>A little progress every day adds up.</p></div>
+ <div class="stats">
+  <div class="stat"><span>Total Tasks</span><h2 id="totalStat">0</h2></div>
+  <div class="stat"><span>Completed</span><h2 id="doneStat">0</h2></div>
+  <div class="stat"><span>Pending</span><h2 id="pendingStat">0</h2></div>
+  <div class="stat"><span>Overall Progress</span><h2 id="progressStat">0%</h2></div>
+ </div>
+ <div class="grid">
+  <div>
+   <div class="panel"><div class="panel-head"><h3>Recent Tasks</h3><button class="btn secondary" onclick="showPage('tasks')">View all</button></div><div id="recentTasks" class="task-list"></div></div>
+   <div class="panel"><h3>Subject Progress</h3><div id="dashboardSubjects"></div></div>
+  </div>
+  <div>
+   <div class="panel"><div class="panel-head"><h3>Upcoming Exams</h3><button class="btn secondary" onclick="showPage('exams')">View all</button></div><div id="dashboardExams"></div></div>
+   <div class="panel"><h3>Next Pending Task</h3><div id="dashboardNext"></div></div>
+  </div>
+ </div>
+</section>
+
+<section class="page" id="tasks">
+ <div class="panel">
+  <div class="panel-head"><h3>Manage Tasks</h3><button class="btn" onclick="openTaskModal()">＋ Add Task</button></div>
+  <div class="toolbar">
+   <input id="taskSearch" placeholder="Search task or subject..." oninput="renderTasks()">
+   <select id="statusFilter" onchange="renderTasks()"><option value="all">All Status</option><option value="pending">Pending</option><option value="done">Completed</option></select>
+   <select id="priorityFilter" onchange="renderTasks()"><option value="all">All Priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
+   <select id="sortFilter" onchange="renderTasks()"><option value="date">Sort by Date</option><option value="priority">Sort by Priority</option><option value="name">Sort by Topic</option></select>
+  </div>
+  <div id="allTasks" class="task-list"></div>
+ </div>
+</section>
+
+<section class="page" id="today">
+ <div class="panel"><div class="panel-head"><h3>Today's Tasks</h3><button class="btn" onclick="openTaskModal()">＋ Add Task</button></div><div id="todayTasks" class="task-list"></div></div>
+</section>
+
+<section class="page" id="subjects">
+ <div class="panel"><div class="panel-head"><h3>My Subjects</h3><button class="btn" onclick="openSubjectModal()">＋ Add Subject</button></div><div id="subjectList"></div></div>
+</section>
+
+<section class="page" id="exams">
+ <div class="panel"><div class="panel-head"><h3>Exam Schedule</h3><button class="btn" onclick="openExamModal()">＋ Add Exam</button></div><div id="examList"></div></div>
+</section>
+
+<section class="page" id="dsa">
+ <div class="grid">
+  <div class="panel">
+   <h3>Completed Tasks — Stack</h3>
+   <p style="font-size:11px;color:var(--muted);margin:8px 0 14px">Last completed task appears at the top (LIFO).</p>
+   <div id="stackList"></div>
+   <button class="btn secondary" onclick="undoTask()">↶ Undo Last Completion</button>
+  </div>
+  <div class="panel">
+   <h3>Pending Tasks — Queue</h3>
+   <p style="font-size:11px;color:var(--muted);margin:8px 0 14px">First pending task appears first (FIFO).</p>
+   <div id="queueList"></div>
+   <button class="btn" onclick="nextPending()">Next Pending Task →</button>
+   <div id="nextResult" style="font-size:12px;margin-top:12px"></div>
+  </div>
+ </div>
+</section>
+</main>
+</div>
+
+<!-- Task modal -->
+<div class="modal-bg" id="taskModal"><div class="modal">
+<h3 id="taskModalTitle">Add Task</h3>
+<form id="taskForm"><div class="form-grid">
+<label class="wide">Subject<input name="subject" required placeholder="Subject name"></label>
+<label class="wide">Topic / Task<input name="title" required placeholder="Enter task"></label>
+<label>Due Date<input name="date" type="date" required></label>
+<label>Priority<select name="priority"><option>Medium</option><option>High</option><option>Low</option></select></label>
+<label>Estimated Minutes<input name="minutes" type="number" min="0" value="30"></label>
+<label>Progress (%)<input name="progress" type="number" min="0" max="100" value="0"></label>
+</div><div class="actions"><button type="button" class="btn secondary" onclick="closeModal('taskModal')">Cancel</button><button class="btn">Save Task</button></div></form>
+</div></div>
+
+<!-- Subject modal -->
+<div class="modal-bg" id="subjectModal"><div class="modal">
+<h3>Add Subject</h3>
+<form id="subjectForm"><div class="form-grid">
+<label class="wide">Subject Name<input name="name" required></label>
+<label>Subject Code<input name="code"></label>
+<label>Teacher<input name="teacher"></label>
+<label class="wide">Total Topics<input name="topics" type="number" min="0" value="0"></label>
+</div><div class="actions"><button type="button" class="btn secondary" onclick="closeModal('subjectModal')">Cancel</button><button class="btn">Save Subject</button></div></form>
+</div></div>
+
+<!-- Exam modal -->
+<div class="modal-bg" id="examModal"><div class="modal">
+<h3>Add Exam</h3>
+<form id="examForm"><div class="form-grid">
+<label class="wide">Subject<input name="subject" required></label>
+<label class="wide">Exam Date<input name="date" type="date" required></label>
+</div><div class="actions"><button type="button" class="btn secondary" onclick="closeModal('examModal')">Cancel</button><button class="btn">Save Exam</button></div></form>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE = "studyspace-full-v1";
+
+function dateOffset(n){
+ const d=new Date();d.setDate(d.getDate()+n);
+ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+const starter={
+ tasks:[
+  {id:1,subject:"Data Structures",title:"Revise Stack and Queue",date:dateOffset(0),priority:"High",minutes:45,progress:35},
+  {id:2,subject:"Mathematics",title:"Practice Integration",date:dateOffset(1),priority:"Medium",minutes:60,progress:0},
+  {id:3,subject:"C++ Programming",title:"Complete OOP Notes",date:dateOffset(2),priority:"Low",minutes:30,progress:100}
+ ],
+ subjects:[
+  {id:1,name:"Data Structures",code:"CSE201",teacher:"",topics:12},
+  {id:2,name:"Mathematics",code:"MTH101",teacher:"",topics:10},
+  {id:3,name:"C++ Programming",code:"CSE102",teacher:"",topics:8}
+ ],
+ exams:[],
+ completedStack:[]
+};
+
+let data;
+try {
+ data=JSON.parse(localStorage.getItem(STORE))||starter;
+} catch {
+ data=starter;
+}
+let editingTask=null;
+
+function persist(){
+ try {localStorage.setItem(STORE,JSON.stringify(data));}
+ catch(e){toast("Could not save browser data");}
+}
+
+function toast(msg){
+ const el=document.getElementById("toast");
+ el.textContent=msg;el.classList.add("show");
+ setTimeout(()=>el.classList.remove("show"),2200);
+}
+
+function esc(s=""){
+ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function niceDate(s){
+ if(!s)return "No date";
+ return new Date(s+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"});
+}
+
+function daysRemaining(s){
+ const a=new Date();a.setHours(0,0,0,0);
+ const b=new Date(s+"T00:00:00");
+ return Math.ceil((b-a)/86400000);
+}
+
+function showPage(id){
+ document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===id));
+ const titles={dashboard:"Welcome to StudySpace!",tasks:"Your Study Tasks",today:"Today's Tasks",subjects:"Your Subjects",exams:"Exam Schedule",dsa:"DSA Features"};
+ document.getElementById("pageTitle").textContent=titles[id];
+}
+document.querySelectorAll(".nav button").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+
+function closeModal(id){document.getElementById(id).classList.remove("show")}
+
+function openTaskModal(task=null){
+ editingTask=task?task.id:null;
+ const f=document.getElementById("taskForm");f.reset();
+ f.elements.subject.value=task?.subject||"";
+ f.elements.title.value=task?.title||"";
+ f.elements.date.value=task?.date||dateOffset(0);
+ f.elements.priority.value=task?.priority||"Medium";
+ f.elements.minutes.value=task?.minutes??30;
+ f.elements.progress.value=task?.progress??0;
+ document.getElementById("taskModalTitle").textContent=task?"Edit Task":"Add Task";
+ document.getElementById("taskModal").classList.add("show");
+}
+
+function openSubjectModal(){
+ document.getElementById("subjectForm").reset();
+ document.getElementById("subjectModal").classList.add("show");
+}
+function openExamModal(){
+ document.getElementById("examForm").reset();
+ document.getElementById("examModal").classList.add("show");
+}
+
+document.getElementById("taskForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ const f=e.target;
+ const item={
+  id:editingTask||Date.now(),
+  subject:f.elements.subject.value.trim(),
+  title:f.elements.title.value.trim(),
+  date:f.elements.date.value,
+  priority:f.elements.priority.value,
+  minutes:Number(f.elements.minutes.value)||0,
+  progress:Math.max(0,Math.min(100,Number(f.elements.progress.value)||0))
+ };
+ if(editingTask){
+  data.tasks=data.tasks.map(t=>t.id===editingTask?item:t);
+ }else{
+  data.tasks.push(item);
+ }
+ closeModal("taskModal");persist();renderAll();
+ toast(editingTask?"Task updated":"Task added");
+});
+
+document.getElementById("subjectForm").addEventListener("submit",e=>{
+ e.preventDefault();const f=e.target;
+ data.subjects.push({
+  id:Date.now(),name:f.elements.name.value.trim(),
+  code:f.elements.code.value.trim(),
+  teacher:f.elements.teacher.value.trim(),
+  topics:Number(f.elements.topics.value)||0
+ });
+ closeModal("subjectModal");persist();renderAll();toast("Subject added");
+});
+
+document.getElementById("examForm").addEventListener("submit",e=>{
+ e.preventDefault();const f=e.target;
+ data.exams.push({id:Date.now(),subject:f.elements.subject.value.trim(),date:f.elements.date.value});
+ closeModal("examModal");persist();renderAll();toast("Exam added");
+});
+
+function toggleTask(id){
+ const task=data.tasks.find(t=>t.id===id);if(!task)return;
+ if(task.progress===100){
+  task.progress=0;
+  data.completedStack=data.completedStack.filter(x=>x!==id);
+ }else{
+  task.progress=100;
+  data.completedStack=data.completedStack.filter(x=>x!==id);
+  data.completedStack.push(id);
+ }
+ persist();renderAll();toast("Task status updated");
+}
+
+function deleteTask(id){
+ if(!confirm("Delete this task?"))return;
+ data.tasks=data.tasks.filter(t=>t.id!==id);
+ data.completedStack=data.completedStack.filter(x=>x!==id);
+ persist();renderAll();toast("Task deleted");
+}
+function deleteSubject(id){
+ if(!confirm("Delete this subject?"))return;
+ data.subjects=data.subjects.filter(s=>s.id!==id);
+ persist();renderAll();toast("Subject deleted");
+}
+function deleteExam(id){
+ if(!confirm("Delete this exam?"))return;
+ data.exams=data.exams.filter(x=>x.id!==id);
+ persist();renderAll();toast("Exam deleted");
+}
+
+function taskHTML(t){
+ return `<div class="task ${t.progress===100?"done":""}">
+ <input class="check" type="checkbox" ${t.progress===100?"checked":""} onchange="toggleTask(${t.id})">
+ <div class="task-main"><strong>${esc(t.title)}</strong>
+ <small>${esc(t.subject)} · ${niceDate(t.date)} · ${t.minutes} min · ${t.progress}%</small>
+ <div class="track"><div class="fill" style="width:${t.progress}%"></div></div></div>
+ <span class="priority ${t.priority}">${t.priority}</span>
+ <button class="btn secondary" onclick="editTask(${t.id})">Edit</button>
+ <button class="btn danger" onclick="deleteTask(${t.id})">×</button>
+ </div>`;
+}
+function editTask(id){
+ const t=data.tasks.find(x=>x.id===id);if(t)openTaskModal(t);
+}
+
+function renderTasks(){
+ const q=(document.getElementById("taskSearch")?.value||"").toLowerCase();
+ const status=document.getElementById("statusFilter")?.value||"all";
+ const priority=document.getElementById("priorityFilter")?.value||"all";
+ const sort=document.getElementById("sortFilter")?.value||"date";
+ let list=data.tasks.filter(t=>
+  (t.title+" "+t.subject).toLowerCase().includes(q)&&
+  (status==="all"||(status==="done"?t.progress===100:t.progress<100))&&
+  (priority==="all"||t.priority===priority)
+ );
+ if(sort==="date")list.sort((a,b)=>a.date.localeCompare(b.date));
+ if(sort==="name")list.sort((a,b)=>a.title.localeCompare(b.title));
+ if(sort==="priority")list.sort((a,b)=>({High:0,Medium:1,Low:2}[a.priority]-{High:0,Medium:1,Low:2}[b.priority]));
+ document.getElementById("allTasks").innerHTML=list.length?list.map(taskHTML).join(""):'<div class="empty">No matching tasks found.</div>';
+}
+
+function renderToday(){
+ const today=dateOffset(0);
+ const list=data.tasks.filter(t=>t.date===today);
+ document.getElementById("todayTasks").innerHTML=list.length?list.map(taskHTML).join(""):'<div class="empty">No tasks due today. Enjoy your free time!</div>';
+}
+
+function renderSubjects(){
+ const el=document.getElementById("subjectList");
+ el.innerHTML=data.subjects.length?data.subjects.map(s=>{
+  const ts=data.tasks.filter(t=>t.subject.toLowerCase()===s.name.toLowerCase());
+  const done=ts.filter(t=>t.progress===100).length;
+  const pct=ts.length?Math.round(done/ts.length*100):0;
+  return `<div class="subject-card"><strong>${esc(s.name)}</strong>
+  <small>Code: ${esc(s.code||"-")} · Teacher: ${esc(s.teacher||"-")} · Topics: ${s.topics}</small>
+  <small>${done} of ${ts.length} tasks completed · ${pct}%</small>
+  <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+  <button class="btn danger" style="margin-top:10px" onclick="deleteSubject(${s.id})">Delete</button></div>`;
+ }).join(""):'<div class="empty">No subjects added yet.</div>';
+}
+
+function examHTML(x){
+ const days=daysRemaining(x.date);
+ const status=days<0?"Past exam":days===0?"Today":days+" days remaining";
+ return `<div class="exam"><div class="exam-date">${niceDate(x.date)}</div>
+ <div class="exam-info"><strong>${esc(x.subject)}</strong><small>${status}</small></div>
+ <button class="btn danger" onclick="deleteExam(${x.id})">×</button></div>`;
+}
+function renderExams(){
+ const list=[...data.exams].sort((a,b)=>a.date.localeCompare(b.date));
+ document.getElementById("examList").innerHTML=list.length?list.map(examHTML).join(""):'<div class="empty">No exams scheduled.</div>';
+}
+function renderDashboard(){
+ const total=data.tasks.length;
+ const done=data.tasks.filter(t=>t.progress===100).length;
+ const pending=total-done;
+ const progress=total?Math.round(data.tasks.reduce((a,t)=>a+t.progress,0)/total):0;
+ document.getElementById("totalStat").textContent=total;
+ document.getElementById("doneStat").textContent=done;
+ document.getElementById("pendingStat").textContent=pending;
+ document.getElementById("progressStat").textContent=progress+"%";
+ document.getElementById("recentTasks").innerHTML=data.tasks.length?[...data.tasks].sort((a,b)=>b.id-a.id).slice(0,4).map(taskHTML).join(""):'<div class="empty">No tasks yet.</div>';
+ const exams=[...data.exams].filter(x=>daysRemaining(x.date)>=0).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,4);
+ document.getElementById("dashboardExams").innerHTML=exams.length?exams.map(examHTML).join(""):'<div class="empty">No upcoming exams.</div>';
+ document.getElementById("dashboardSubjects").innerHTML=data.subjects.length?data.subjects.map(s=>{
+  const ts=data.tasks.filter(t=>t.subject.toLowerCase()===s.name.toLowerCase());
+  const pct=ts.length?Math.round(ts.reduce((a,t)=>a+t.progress,0)/ts.length):0;
+  return `<div style="margin:13px 0"><small>${esc(s.name)} — ${pct}%</small><div class="track"><div class="fill" style="width:${pct}%"></div></div></div>`;
+ }).join(""):'<div class="empty">Add subjects to see progress.</div>';
+ const next=data.tasks.filter(t=>t.progress<100).sort((a,b)=>a.date.localeCompare(b.date))[0];
+ document.getElementById("dashboardNext").innerHTML=next?`<b>${esc(next.title)}</b><p style="font-size:11px;color:var(--muted);margin-top:7px">${esc(next.subject)} · ${niceDate(next.date)}</p>`:'<div class="empty">All tasks completed!</div>';
+}
+
+function renderDSA(){
+ const stack=data.completedStack.map(id=>data.tasks.find(t=>t.id===id)).filter(Boolean).reverse();
+ document.getElementById("stackList").innerHTML=stack.length?stack.map((t,i)=>`<p style="padding:8px;border-bottom:1px solid var(--border);font-size:12px">${i===0?"TOP → ":""}${esc(t.title)}</p>`).join(""):'<div class="empty">Stack is empty.</div>';
+ const queue=data.tasks.filter(t=>t.progress<100).sort((a,b)=>a.date.localeCompare(b.date));
+ document.getElementById("queueList").innerHTML=queue.length?queue.map((t,i)=>`<p style="padding:8px;border-bottom:1px solid var(--border);font-size:12px">${i===0?"FRONT → ":""}${esc(t.title)}</p>`).join(""):'<div class="empty">Queue is empty.</div>';
+}
+
+function undoTask(){
+ const id=data.completedStack.pop();
+ if(id===undefined){toast("No completed task to undo");return;}
+ const task=data.tasks.find(t=>t.id===id);
+ if(task)task.progress=0;
+ persist();renderAll();toast("Last completion undone");
+}
+function nextPending(){
+ const next=data.tasks.filter(t=>t.progress<100).sort((a,b)=>a.date.localeCompare(b.date))[0];
+ document.getElementById("nextResult").textContent=next?"Next task: "+next.title:"No pending tasks!";
+}
+
+function renderAll(){
+ renderDashboard();renderTasks();renderToday();renderSubjects();renderExams();renderDSA();
+}
+document.getElementById("dateLabel").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+renderAll();
+</script>
+</body>
+</html>
