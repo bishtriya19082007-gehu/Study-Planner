@@ -1,0 +1,153 @@
+class StudyPlanner
+{
+private:
+    vector<Subject> subjects;
+    vector<Task> tasks;
+    vector<Exam> exams;
+};
+void addSubject()
+{
+    Subject s;
+    s.input();
+
+    subjects.push_back(s);
+
+    saveSubjects();
+
+    cout << "\nSubject added successfully!\n";
+}
+void addTask()
+{
+    Task t;
+
+    t.input(nextID++);
+
+    tasks.push_back(t);
+
+    pendingQueue.push(t.id);
+
+    saveTasks();
+
+    cout << "\nTask added successfully! Task ID: "
+         << t.id << '\n';
+}
+void deleteTask()
+{
+    int id;
+
+    cout << "Enter task ID to delete: ";
+    cin >> id;
+
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    int index = findTaskIndex(id);
+
+    if (index == -1)
+    {
+        cout << "Task not found.\n";
+        return;
+    }
+
+    tasks.erase(tasks.begin() + index);
+
+    rebuildPendingQueue();
+
+    saveTasks();
+
+    cout << "Task deleted successfully.\n";
+}
+void viewTasks()
+{
+    if (tasks.empty())
+    {
+        cout << "\nNo tasks available.\n";
+        return;
+    }
+
+    for (const Task &t : tasks)
+    {
+        t.display();
+    }
+}
+class Subject
+{
+public:
+    string name, code, teacher;
+    int totalTopics;
+
+    Subject()
+    {
+        totalTopics = 0;
+    }
+
+    void input()
+    {
+        cout << "Enter subject name: ";
+        getline(cin, name);
+
+        cout << "Enter subject code: ";
+        getline(cin, code);
+
+        cout << "Enter teacher name: ";
+        getline(cin, teacher);
+
+        cout << "Enter total topics: ";
+        cin >> totalTopics;
+
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
+    void display() const
+    {
+        cout << "\nSubject: " << name
+             << "\nCode: " << code
+             << "\nTeacher: " << teacher
+             << "\nTotal Topics: " << totalTopics << "\n";
+    }
+};
+class Task
+{
+public:
+    int id;
+    string subject, topic, date, priority, status;
+    int estimatedMinutes;
+    int progress;
+
+    Task()
+    {
+        id = 0;
+        estimatedMinutes = 0;
+        progress = 0;
+        status = "Pending";
+    }
+
+    void display() const
+    {
+        cout << left << setw(5) << id
+             << setw(20) << subject
+             << setw(22) << topic
+             << setw(13) << date
+             << setw(10) << priority
+             << setw(13) << status
+             << setw(8) << (to_string(progress) + "%")
+             << estimatedMinutes << " min\n";
+    }
+};
+class StudyPlanner
+{
+private:
+    vector<Subject> subjects;
+    vector<Task> tasks;
+    vector<Exam> exams;
+
+public:
+    StudyPlanner()
+    {
+        loadData();
+    }
+
+    void addSubject();
+    void addTask();
+    void viewTasks();
+    void deleteTask();
+};
