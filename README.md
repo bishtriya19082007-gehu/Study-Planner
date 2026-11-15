@@ -258,6 +258,7 @@ To improve time management and study organization.
 
 
 🔮 Future Improvements
+
 🌐 Develop a complete web-based frontend using HTML, CSS, and JavaScript.
 🔗 Integrate the C++ backend with the web frontend.
 🔐 Add student login and authentication.
