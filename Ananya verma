@@ -1,0 +1,64 @@
+queue<int> pendingQueue;
+pendingQueue.push(t.id);
+void rebuildPendingQueue()
+{
+    queue<int> emptyQueue;
+
+    pendingQueue.swap(emptyQueue);
+
+    for (const Task &t : tasks)
+    {
+        if (t.status != "Completed")
+        {
+            pendingQueue.push(t.id);
+        }
+    }
+}
+void nextPendingTask()
+{
+    rebuildPendingQueue();
+
+    if (pendingQueue.empty())
+    {
+        cout << "No pending tasks!\n";
+        return;
+    }
+
+    int id = pendingQueue.front();
+
+    int index = findTaskIndex(id);
+
+    if (index != -1)
+    {
+        cout << "\nNext pending task:\n";
+
+        tasks[index].display();
+    }
+}
+string toLowerCase(string s)
+{
+    transform(s.begin(), s.end(), s.begin(),
+              [](unsigned char c)
+              {
+                  return static_cast<char>(tolower(c));
+              });
+
+    return s;
+}
+sort(upcoming.begin(), upcoming.end(),
+     [](const Exam &a, const Exam &b)
+     {
+         return dateKey(a.date) < dateKey(b.date);
+     });
+sort(tasks.begin(), tasks.end(),
+     [this](const Task &a, const Task &b)
+     {
+         int pa = priorityRank(a.priority);
+         int pb = priorityRank(b.priority);
+
+         if (pa == pb)
+             return dateKey(a.date) < dateKey(b.date);
+
+         return pa > pb;
+     });
+t.progress = max(0, min(100, t.progress));
