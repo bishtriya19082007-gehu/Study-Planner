@@ -62,3 +62,496 @@ sort(tasks.begin(), tasks.end(),
          return pa > pb;
      });
 t.progress = max(0, min(100, t.progress));
+struct Task { int id; string subject, topic, date, priority, status;
+                  int progress, estimatedMinutes; void display() const; };
+    struct Exam { string subject, date; };
+    vector<Task> tasks;
+    vector<Exam> exams;
+    int findTaskIndex(int id);
+    long long dateKey(const string &date);
+    int priorityRank(const string &priority);
+Required headers in the main file:
+    <iostream> <vector> <queue> <algorithm> <string>
+    <cctype> <numeric> <iterator> <iomanip>
+Do not paste duplicate definitions of structures, vectors, or functions.
+============================================================================
+*/
+// QUEUE: FIFO means First In, First Out.
+// The first ID inserted is the first ID removed.
+// Store task IDs, then use findTaskIndex() to access task details.
+queue<int> pendingQueue;
+// 1. Rebuild the queue so it contains only tasks that are not completed.
+// swap() clears the old queue efficiently.
+void rebuildPendingQueue()
+{
+    queue<int> emptyQueue;
+    pendingQueue.swap(emptyQueue);
+    for (const Task &t : tasks)
+    {
+        if (t.status != "Completed")
+            pendingQueue.push(t.id); // push() inserts at the rear.
+    }
+}
+// 2. Display the next pending task.
+// front() reads the first ID but does not remove it.
+void nextPendingTask()
+{
+    rebuildPendingQueue();
+    if (pendingQueue.empty()) // Always check before front().
+    {
+        cout << "No pending tasks!\n";
+        return;
+    }
+    int id = pendingQueue.front();
+    int index = findTaskIndex(id);
+    if (index != -1)
+    {
+        cout << "\nNext pending task:\n";
+        tasks[index].display();
+    }
+}
+// 3. Display every task in queue order.
+// A temporary copy is popped so the original queue is preserved.
+void displayPendingQueue()
+{
+    rebuildPendingQueue();
+    if (pendingQueue.empty())
+    {
+        cout << "No pending tasks!\n";
+        return;
+    }
+    queue<int> temp = pendingQueue;
+    cout << "\nPENDING TASKS:\n";
+    while (!temp.empty())
+    {
+        int id = temp.front();
+        int index = findTaskIndex(id);
+        if (index != -1)
+            tasks[index].display();
+        temp.pop(); // Removes front element from the temporary queue.
+    }
+}
+// 4. Return the number of pending task IDs.
+int getPendingQueueSize()
+{
+    rebuildPendingQueue();
+    return static_cast<int>(pendingQueue.size());
+}
+// 5. Check whether the pending queue is empty.
+bool isPendingQueueEmpty()
+{
+    rebuildPendingQueue();
+    return pendingQueue.empty();
+}
+// 6. Return the front task ID, or -1 when no task is pending.
+int getFrontPendingTaskId()
+{
+    rebuildPendingQueue();
+    if (pendingQueue.empty())
+        return -1;
+    return pendingQueue.front();
+}
+// 7. Return the rear task ID, or -1 when no task is pending.
+int getRearPendingTaskId()
+{
+    rebuildPendingQueue();
+    if (pendingQueue.empty())
+        return -1;
+    return pendingQueue.back();
+}
+// 8. Convert queue IDs to a vector.
+// Queue has no normal iterators, so process a copy.
+vector<int> getPendingTaskIds()
+{
+    rebuildPendingQueue();
+    vector<int> ids;
+    queue<int> temp = pendingQueue;
+    while (!temp.empty())
+    {
+        ids.push_back(temp.front());
+        temp.pop();
+    }
+    return ids;
+}
+// 9. Check whether a particular ID is in the pending queue.
+bool isTaskIdPending(int requiredId)
+{
+    rebuildPendingQueue();
+    queue<int> temp = pendingQueue;
+    while (!temp.empty())
+    {
+        if (temp.front() == requiredId)
+            return true;
+        temp.pop();
+    }
+    return false;
+}
+// 10. Display queue status, size, front and rear.
+void showPendingQueueInformation()
+{
+    rebuildPendingQueue();
+    cout << "\nQUEUE INFORMATION\n";
+    if (pendingQueue.empty())
+    {
+        cout << "Queue is empty.\n";
+        return;
+    }
+    cout << "Size  : " << pendingQueue.size() << "\n";
+    cout << "Front : " << pendingQueue.front() << "\n";
+    cout << "Rear  : " << pendingQueue.back() << "\n";
+}
+// 11. Demonstrate basic queue operations using a local queue.
+void demonstrateQueueOperations()
+{
+    queue<int> demo;
+    demo.push(101);
+    demo.push(102);
+    demo.push(103);
+    cout << "\nQueue size: " << demo.size() << "\n";
+    cout << "Front: " << demo.front() << "\n";
+    cout << "Rear : " << demo.back() << "\n";
+    demo.pop(); // Removes 101, the first inserted element.
+    cout << "Front after pop(): " << demo.front() << "\n";
+    while (!demo.empty())
+    {
+        cout << demo.front() << " ";
+        demo.pop();
+    }
+    cout << "\n";
+}
+// 12. Demonstrate swap() without changing the project's real queue.
+void demonstrateQueueSwap()
+{
+    queue<int> first, second;
+    first.push(1);
+    first.push(2);
+    second.push(10);
+    second.push(20);
+    first.swap(second);
+    cout << "First queue front after swap: "
+         << first.front() << "\n";
+    cout << "Second queue front after swap: "
+         << second.front() << "\n";
+}
+// STL: transform() applies an operation to every item in a range.
+// Here it converts each character into lowercase.
+string toLowerCase(string s)
+{
+    transform(s.begin(), s.end(), s.begin(),
+              [](unsigned char c)
+              {
+                  return static_cast<char>(tolower(c));
+              });
+    return s;
+}
+// 13. Remove spaces from the beginning and end of a string.
+// find_if_not() locates the first character that is not whitespace.
+string trimText(const string &input)
+{
+    auto first = find_if_not(
+        input.begin(), input.end(),
+        [](unsigned char c) { return isspace(c); });
+    if (first == input.end())
+        return "";
+    auto last = find_if_not(
+        input.rbegin(), input.rend(),
+        [](unsigned char c) { return isspace(c); }).base();
+    return string(first, last);
+}
+// 14. Search for text without considering uppercase/lowercase.
+bool containsText(const string &textValue, const string &searchValue)
+{
+    string a = toLowerCase(textValue);
+    string b = toLowerCase(searchValue);
+    return a.find(b) != string::npos;
+}
+// 15. find_if() searches the tasks vector using a condition.
+// Return the vector index, or -1 if the ID does not exist.
+int findTaskUsingSTL(int requiredId)
+{
+    auto it = find_if(
+        tasks.begin(), tasks.end(),
+        [requiredId](const Task &t)
+        {
+            return t.id == requiredId;
+        });
+    if (it == tasks.end())
+        return -1;
+    return static_cast<int>(distance(tasks.begin(), it));
+}
+// 16. Search the first task whose subject or topic matches a keyword.
+void searchFirstMatchingTask(const string &keyword)
+{
+    string key = toLowerCase(trimText(keyword));
+    auto it = find_if(
+        tasks.begin(), tasks.end(),
+        [&key](const Task &t)
+        {
+            return containsText(t.subject, key) ||
+                   containsText(t.topic, key);
+        });
+    if (it != tasks.end())
+        it->display();
+    else
+        cout << "No matching task found.\n";
+}
+// 17. count_if() counts tasks that are still pending.
+int countPendingTasksUsingSTL()
+{
+    return static_cast<int>(
+        count_if(tasks.begin(), tasks.end(),
+                 [](const Task &t)
+                 {
+                     return t.status != "Completed";
+                 }));
+}
+// 18. Count completed tasks using count_if().
+int countCompletedTasksUsingSTL()
+{
+    return static_cast<int>(
+        count_if(tasks.begin(), tasks.end(),
+                 [](const Task &t)
+                 {
+                     return t.status == "Completed";
+                 }));
+}
+// 19. Count High priority tasks.
+int countHighPriorityTasks()
+{
+    return static_cast<int>(
+        count_if(tasks.begin(), tasks.end(),
+                 [](const Task &t)
+                 {
+                     return toLowerCase(t.priority) == "high";
+                 }));
+}
+// 20. Count tasks that belong to a particular subject.
+int countTasksForSubject(const string &subjectName)
+{
+    string key = toLowerCase(trimText(subjectName));
+    return static_cast<int>(
+        count_if(tasks.begin(), tasks.end(),
+                 [&key](const Task &t)
+                 {
+                     return toLowerCase(trimText(t.subject)) == key;
+                 }));
+}
+// 21. sort() arranges exams in ascending date order.
+// dateKey() converts DD/MM/YYYY into a comparable numeric value.
+void sortExamsByDate()
+{
+    sort(exams.begin(), exams.end(),
+         [](const Exam &a, const Exam &b)
+         {
+             return dateKey(a.date) < dateKey(b.date);
+         });
+    cout << "Examinations sorted by date.\n";
+}
+// 22. Sort tasks by priority, then by date.
+// priorityRank(): High = 3, Medium = 2, Low = 1.
+void sortTasksByPriority()
+{
+    sort(tasks.begin(), tasks.end(),
+         [](const Task &a, const Task &b)
+         {
+             int pa = priorityRank(a.priority);
+             int pb = priorityRank(b.priority);
+             if (pa == pb)
+                 return dateKey(a.date) < dateKey(b.date);
+             return pa > pb;
+         });
+    rebuildPendingQueue();
+    cout << "Tasks sorted by priority and date.\n";
+}
+// 23. Sort tasks from earliest due date to latest due date.
+void sortTasksByDate()
+{
+    sort(tasks.begin(), tasks.end(),
+         [](const Task &a, const Task &b)
+         {
+             return dateKey(a.date) < dateKey(b.date);
+         });
+    rebuildPendingQueue();
+    cout << "Tasks sorted by due date.\n";
+}
+// 24. stable_sort() preserves the relative order of equivalent elements.
+void stableSortTasksByPriority()
+{
+    stable_sort(tasks.begin(), tasks.end(),
+                [](const Task &a, const Task &b)
+                {
+                    return priorityRank(a.priority) >
+                           priorityRank(b.priority);
+                });
+    rebuildPendingQueue();
+}
+// 25. max_element() finds the task with the highest priority rank.
+void displayHighestPriorityTask()
+{
+    if (tasks.empty())
+    {
+        cout << "No tasks available.\n";
+        return;
+    }
+    auto it = max_element(
+        tasks.begin(), tasks.end(),
+        [](const Task &a, const Task &b)
+        {
+            return priorityRank(a.priority) <
+                   priorityRank(b.priority);
+        });
+    it->display();
+}
+// 26. min_element() finds the task with the lowest priority rank.
+void displayLowestPriorityTask()
+{
+    if (tasks.empty())
+    {
+        cout << "No tasks available.\n";
+        return;
+    }
+    auto it = min_element(
+        tasks.begin(), tasks.end(),
+        [](const Task &a, const Task &b)
+        {
+            return priorityRank(a.priority) <
+                   priorityRank(b.priority);
+        });
+    it->display();
+}
+// 27. Find the task requiring the maximum estimated time.
+void displayLongestTask()
+{
+    if (tasks.empty())
+    {
+        cout << "No tasks available.\n";
+        return;
+    }
+    auto it = max_element(
+        tasks.begin(), tasks.end(),
+        [](const Task &a, const Task &b)
+        {
+            return a.estimatedMinutes < b.estimatedMinutes;
+        });
+    it->display();
+}
+// 28. Find the task requiring the minimum estimated time.
+void displayShortestTask()
+{
+    if (tasks.empty())
+    {
+        cout << "No tasks available.\n";
+        return;
+    }
+    auto it = min_element(
+        tasks.begin(), tasks.end(),
+        [](const Task &a, const Task &b)
+        {
+            return a.estimatedMinutes < b.estimatedMinutes;
+        });
+    it->display();
+}
+// 29. max() and min() keep progress between 0 and 100.
+int validateProgressValue(int value)
+{
+    return max(0, min(100, value));
+}
+// 30. Update progress using STL search and range validation.
+void updateProgressUsingSTL(int taskId, int newProgress)
+{
+    int index = findTaskUsingSTL(taskId);
+    if (index == -1)
+    {
+        cout << "Task not found.\n";
+        return;
+    }
+    tasks[index].progress = validateProgressValue(newProgress);
+    if (tasks[index].progress == 100)
+        tasks[index].status = "Completed";
+    else
+        tasks[index].status = "Pending";
+    rebuildPendingQueue();
+}
+// 31. all_of() returns true only if every task is completed.
+bool areAllTasksCompleted()
+{
+    if (tasks.empty())
+        return false;
+    return all_of(
+        tasks.begin(), tasks.end(),
+        [](const Task &t)
+        {
+            return t.status == "Completed";
+        });
+}
+// 32. any_of() checks whether at least one High priority task exists.
+bool hasHighPriorityTask()
+{
+    return any_of(
+        tasks.begin(), tasks.end(),
+        [](const Task &t)
+        {
+            return toLowerCase(t.priority) == "high";
+        });
+}
+// 33. copy_if() copies only pending tasks into a separate vector.
+vector<Task> getPendingTasksCopy()
+{
+    vector<Task> result;
+    copy_if(tasks.begin(), tasks.end(), back_inserter(result),
+            [](const Task &t)
+            {
+                return t.status != "Completed";
+            });
+    return result;
+}
+// 34. Copy completed tasks into a separate vector.
+vector<Task> getCompletedTasksCopy()
+{
+    vector<Task> result;
+    copy_if(tasks.begin(), tasks.end(), back_inserter(result),
+            [](const Task &t)
+            {
+                return t.status == "Completed";
+            });
+    return result;
+}
+// 35. for_each() performs display operation on every task in a vector.
+void displayTaskVectorUsingForEach(const vector<Task> &items)
+{
+    if (items.empty())
+    {
+        cout << "No tasks to display.\n";
+        return;
+    }
+    for_each(items.begin(), items.end(),
+             [](const Task &t)
+             {
+                 t.display();
+             });
+}
+// 36. MEMBER CONTRIBUTION SUMMARY
+/*
+QUEUE OPERATIONS:
+  push()   : Inserts a task ID at the rear of the queue.
+  pop()    : Removes the front element.
+  front()  : Reads the first element without removing it.
+  back()   : Reads the last element.
+  empty()  : Checks whether the queue contains no elements.
+  size()   : Returns the number of elements.
+  swap()   : Exchanges the contents of two queues.
+STL FUNCTIONS AND ALGORITHMS:
+  transform()   : Applies an operation to every character.
+  find_if()     : Searches using a condition.
+  count_if()    : Counts elements matching a condition.
+  sort()        : Sorts tasks and examinations.
+  stable_sort() : Sorts while preserving equivalent-item order.
+  max_element() : Finds the maximum element.
+  min_element() : Finds the minimum element.
+  max() / min() : Compares two values.
+  all_of()      : Checks whether all elements match.
+  any_of()      : Checks whether at least one element matches.
+  copy_if()     : Copies elements matching a condition.
+  for_each()    : Performs an operation on each element.
+End of Queue and STL member contribution.
+*/
