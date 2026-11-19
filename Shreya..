@@ -1,0 +1,732 @@
+/* ============================================
+   FUNCTION 1: FIND TASK INDEX
+   This function searches for a task using ID.
+   It returns the index if task is found.
+   Otherwise, it returns -1.
+   ============================================ */
+
+int findTaskIndex(int id)
+{
+    // Start searching from index zero
+
+    for (int i = 0; i < (int)tasks.size(); i++)
+    {
+        // Compare current task ID with given ID
+
+        if (tasks[i].id == id)
+        {
+            // Return index when ID matches
+
+            return i;
+        }
+    }
+
+    // Return -1 if task does not exist
+
+    return -1;
+}
+
+
+/* ============================================
+   FUNCTION 2: SEARCH TASKS
+   This function searches tasks using:
+   1. Subject
+   2. Topic
+   3. Priority
+   4. Status
+   ============================================ */
+
+void searchTasks()
+{
+    // Declare variable for user input
+
+    string query;
+
+    // Ask the user to enter search keyword
+
+    cout << "Search by subject, topic, priority or status: ";
+
+    getline(cin, query);
+
+
+    // Convert input into lowercase
+    // This makes searching case-insensitive
+
+    query = toLowerCase(query);
+
+
+    // Initially no task is found
+
+    bool found = false;
+
+
+    // Traverse every task present in the vector
+
+    for (const Task &t : tasks)
+    {
+        // Check whether keyword exists in subject
+
+        bool subjectMatch =
+            toLowerCase(t.subject).find(query) != string::npos;
+
+
+        // Check whether keyword exists in topic
+
+        bool topicMatch =
+            toLowerCase(t.topic).find(query) != string::npos;
+
+
+        // Check whether keyword exists in priority
+
+        bool priorityMatch =
+            toLowerCase(t.priority).find(query) != string::npos;
+
+
+        // Check whether keyword exists in status
+
+        bool statusMatch =
+            toLowerCase(t.status).find(query) != string::npos;
+
+
+        // Check all searching conditions
+
+        if (
+            subjectMatch ||
+            topicMatch ||
+            priorityMatch ||
+            statusMatch
+           )
+        {
+            // Display heading only once
+
+            if (!found)
+            {
+                cout << "\nSearch Results:\n";
+
+                found = true;
+            }
+
+
+            // Display matching task details
+
+            t.display();
+        }
+    }
+
+
+    // Display message if no matching task exists
+
+    if (!found)
+    {
+        cout << "No matching tasks found.\n";
+    }
+}
+
+
+/* ============================================
+   FUNCTION 3: SORT TASKS
+   This function provides three sorting options:
+   1. Sort by Date
+   2. Sort by Priority
+   3. Sort by Urgency
+   ============================================ */
+
+void sortTasks()
+{
+    // Variable to store user's choice
+
+    int choice;
+
+
+    // Display sorting menu
+
+    cout << "\n1. Sort by Date";
+
+    cout << "\n2. Sort by Priority";
+
+    cout << "\n3. Sort by Urgency";
+
+    cout << "\nEnter choice: ";
+
+
+    // Read user choice
+
+    if (!(cin >> choice))
+    {
+        // Clear input error
+
+        cin.clear();
+
+
+        // Remove invalid input from buffer
+
+        cin.ignore(
+            numeric_limits<streamsize>::max(),
+            '\n'
+        );
+
+
+        // Display error message
+
+        cout << "Invalid input.\n";
+
+        return;
+    }
+
+
+    // Clear remaining input
+
+    cin.ignore(
+        numeric_limits<streamsize>::max(),
+        '\n'
+    );
+
+
+    /* ----------------------------------------
+       OPTION 1: SORT TASKS BY DATE
+       Earlier dates appear first.
+       ---------------------------------------- */
+
+    if (choice == 1)
+    {
+        // Apply sorting using STL sort()
+
+        sort(
+            tasks.begin(),
+            tasks.end(),
+
+            [](const Task &a, const Task &b)
+            {
+                // Convert dates into numeric values
+
+                long long da = dateKey(a.date);
+
+                long long db = dateKey(b.date);
+
+
+                // If dates are same, compare task IDs
+
+                if (da == db)
+                {
+                    return a.id < b.id;
+                }
+
+
+                // Arrange dates in ascending order
+
+                return da < db;
+            }
+        );
+
+
+        // Display successful sorting message
+
+        cout << "Tasks sorted by date.\n";
+    }
+
+
+    /* ----------------------------------------
+       OPTION 2: SORT TASKS BY PRIORITY
+       High priority comes first.
+       ---------------------------------------- */
+
+    else if (choice == 2)
+    {
+        sort(
+            tasks.begin(),
+            tasks.end(),
+
+            [this](const Task &a, const Task &b)
+            {
+                // Get priority rank of first task
+
+                int pa = priorityRank(a.priority);
+
+
+                // Get priority rank of second task
+
+                int pb = priorityRank(b.priority);
+
+
+                // If priorities are equal, compare dates
+
+                if (pa == pb)
+                {
+                    return dateKey(a.date) < dateKey(b.date);
+                }
+
+
+                // Higher priority rank comes first
+
+                return pa > pb;
+            }
+        );
+
+
+        cout << "Tasks sorted by priority.\n";
+    }
+
+
+    /* ----------------------------------------
+       OPTION 3: SORT TASKS BY URGENCY
+       Pending tasks are arranged according to
+       deadline, priority and progress.
+       Completed tasks are placed at the end.
+       ---------------------------------------- */
+
+    else if (choice == 3)
+    {
+        sort(
+            tasks.begin(),
+            tasks.end(),
+
+            [this](const Task &a, const Task &b)
+            {
+                // Calculate remaining days for first task
+
+                long long da =
+                    daysBetween(todayDate(), a.date);
+
+
+                // Calculate remaining days for second task
+
+                long long db =
+                    daysBetween(todayDate(), b.date);
+
+
+                // Check completion status
+
+                if (
+                    a.status == "Completed" &&
+                    b.status != "Completed"
+                   )
+                {
+                    return false;
+                }
+
+
+                if (
+                    a.status != "Completed" &&
+                    b.status == "Completed"
+                   )
+                {
+                    return true;
+                }
+
+
+                // Compare deadline urgency
+
+                if (da != db)
+                {
+                    return da < db;
+                }
+
+
+                // Get priority ranks
+
+                int pa = priorityRank(a.priority);
+
+                int pb = priorityRank(b.priority);
+
+
+                // Compare priorities if deadlines are same
+
+                if (pa != pb)
+                {
+                    return pa > pb;
+                }
+
+
+                // Compare progress if other values are equal
+
+                return a.progress < b.progress;
+            }
+        );
+
+
+        cout << "Tasks sorted by urgency.\n";
+    }
+
+
+    // Handle incorrect menu choice
+
+    else
+    {
+        cout << "Invalid choice.\n";
+
+        return;
+    }
+
+
+    // Save sorted tasks in file
+
+    saveTasks();
+
+
+    // Display updated task list
+
+    viewTasks();
+}
+
+
+/* ============================================
+   FUNCTION 4: CONVERT STRING TO LOWERCASE
+   This function converts all characters
+   of a string into lowercase.
+   ============================================ */
+
+string toLowerCase(string s)
+{
+    // Apply transform function
+
+    transform(
+        s.begin(),
+        s.end(),
+        s.begin(),
+
+        [](unsigned char c)
+        {
+            // Convert each character to lowercase
+
+            return static_cast<char>(tolower(c));
+        }
+    );
+
+
+    // Return converted string
+
+    return s;
+}
+
+
+/* ============================================
+   FUNCTION 5: DATE KEY
+   This function validates the date and converts
+   it into a numeric format YYYYMMDD.
+   ============================================ */
+
+long long dateKey(const string &date)
+{
+    // Declare date variables
+
+    int day;
+
+    int month;
+
+    int year;
+
+
+    // Variables for date separators
+
+    char slash1;
+
+    char slash2;
+
+
+    // Create string stream
+
+    stringstream ss(date);
+
+
+    // Extract day, month and year
+
+    if (!(ss >> day >> slash1 >> month >> slash2 >> year))
+    {
+        return -1;
+    }
+
+
+    // Validate slash separators
+
+    if (slash1 != '/' || slash2 != '/')
+    {
+        return -1;
+    }
+
+
+    // Validate year
+
+    if (year < 1)
+    {
+        return -1;
+    }
+
+
+    // Validate month
+
+    if (month < 1 || month > 12)
+    {
+        return -1;
+    }
+
+
+    // Store number of days in every month
+
+    int daysInMonth[] =
+    {
+        31, 28, 31, 30,
+        31, 30, 31, 31,
+        30, 31, 30, 31
+    };
+
+
+    // Check whether year is a leap year
+
+    bool leap =
+        (year % 400 == 0) ||
+        (year % 4 == 0 && year % 100 != 0);
+
+
+    // February has 29 days in leap year
+
+    if (leap)
+    {
+        daysInMonth[1] = 29;
+    }
+
+
+    // Validate day according to month
+
+    if (day < 1)
+    {
+        return -1;
+    }
+
+
+    if (day > daysInMonth[month - 1])
+    {
+        return -1;
+    }
+
+
+    // Convert date into numeric key
+
+    return (long long)year * 10000 + month * 100 + day;
+}
+
+
+/* ============================================
+   FUNCTION 6: GET TODAY'S DATE
+   This function returns current system date
+   in DD/MM/YYYY format.
+   ============================================ */
+
+string todayDate()
+{
+    // Get current system time
+
+    time_t now = time(nullptr);
+
+
+    // Convert time into local time
+
+    tm *local = localtime(&now);
+
+
+    // Check whether conversion is successful
+
+    if (local == nullptr)
+    {
+        return "";
+    }
+
+
+    // Character array to store date
+
+    char buffer[11];
+
+
+    // Format date
+
+    strftime(
+        buffer,
+        sizeof(buffer),
+        "%d/%m/%Y",
+        local
+    );
+
+
+    // Return date as string
+
+    return string(buffer);
+}
+
+
+/* ============================================
+   FUNCTION 7: DAYS BETWEEN
+   This function calculates the difference
+   between two dates in days.
+   ============================================ */
+
+long long daysBetween(
+    const string &from,
+    const string &to
+)
+{
+    // Convert first date into numeric key
+
+    long long a = dateKey(from);
+
+
+    // Convert second date into numeric key
+
+    long long b = dateKey(to);
+
+
+    // Check whether dates are valid
+
+    if (a == -1 || b == -1)
+    {
+        return -1;
+    }
+
+
+    // Extract day, month and year from first date
+
+    int d1 = a % 100;
+
+    int m1 = (a / 100) % 100;
+
+    int y1 = a / 10000;
+
+
+    // Extract day, month and year from second date
+
+    int d2 = b % 100;
+
+    int m2 = (b / 100) % 100;
+
+    int y2 = b / 10000;
+
+
+    // Create time structures
+
+    tm t1 = {};
+
+    tm t2 = {};
+
+
+    // Set first date values
+
+    t1.tm_mday = d1;
+
+    t1.tm_mon = m1 - 1;
+
+    t1.tm_year = y1 - 1900;
+
+    t1.tm_hour = 12;
+
+
+    // Set second date values
+
+    t2.tm_mday = d2;
+
+    t2.tm_mon = m2 - 1;
+
+    t2.tm_year = y2 - 1900;
+
+    t2.tm_hour = 12;
+
+
+    // Convert first date into time format
+
+    time_t time1 = mktime(&t1);
+
+
+    // Convert second date into time format
+
+    time_t time2 = mktime(&t2);
+
+
+    // Check conversion errors
+
+    if (
+        time1 == (time_t)-1 ||
+        time2 == (time_t)-1
+       )
+    {
+        return -1;
+    }
+
+
+    // Calculate difference in seconds
+    // Divide by 86400 to convert seconds into days
+
+    return (long long)difftime(time2, time1) / 86400;
+}
+
+
+/* ============================================
+   DATE VALIDATION
+   Repeatedly ask user until valid date is entered.
+   ============================================ */
+
+do
+{
+    // Ask user to enter date
+
+    cout << "Enter date (DD/MM/YYYY): ";
+
+
+    // Read date from user
+
+    getline(cin, date);
+
+
+    // Validate entered date
+
+    if (dateKey(date) == -1)
+    {
+        cout << "Invalid date. Try again.\n";
+    }
+
+}
+while (dateKey(date) == -1);
+
+
+/* ============================================
+   PRIORITY VALIDATION
+   Accept only High, Medium or Low.
+   ============================================ */
+
+do
+{
+    // Ask user for task priority
+
+    cout << "Enter priority (High/Medium/Low): ";
+
+
+    // Read priority
+
+    getline(cin, priority);
+
+
+    // Convert entered priority to lowercase
+
+    priority = toLowerCase(priority);
+
+
+    // Check whether priority is valid
+
+    if (
+        priority != "high" &&
+        priority != "medium" &&
+        priority != "low"
+       )
+    {
+        cout << "Enter High, Medium or Low.\n";
+    }
+
+}
+while (
+    priority != "high" &&
+    priority != "medium" &&
+    priority != "low"
+);
+
+
+// Convert first character into uppercase
+
+priority[0] = toupper(
+    static_cast<unsigned char>(priority[0])
+);
